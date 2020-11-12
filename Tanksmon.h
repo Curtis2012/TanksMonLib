@@ -247,6 +247,7 @@ bool loadConfig()
 	mqttTopicCtrl = configDoc["site"]["mqtt_topic_ctrl"];	
 	mqttUid = configDoc["site"]["mqtt_uid"];
 	mqttPwd = configDoc["site"]["mqtt_pwd"];
+	otaPwd = configDoc["site"]["otapwd"];
 	
 	numtanks = configDoc["site"]["numtanks"];
 	tanks = new tank[numtanks];
