@@ -233,7 +233,7 @@ bool loadConfig()
 		return false;
 	}
 	Serial.println("\nPretty dump of config file: \n");
-	//serializeJsonPretty(configDoc, Serial);
+	serializeJsonPretty(configDoc, Serial);
 
 	sitename = configDoc["site"]["sitename"];
 	pssid = configDoc["site"]["pssid"];
