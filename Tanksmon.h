@@ -57,7 +57,7 @@ const char* blynkAuth = "GBCY5avvW45A24xyW7J_TXNegXxv89q-";  // Blynk auth token
 
 class tank {
 public:
-    const char*  tankType = "W";
+	const char* tankType = "W";
 	bool ignore = false;
 	float depth = 0;
 	float vCM = 0;        // volume in liters per cm of height
@@ -70,7 +70,7 @@ public:
 	int sonarOffset = 0;
 	uint32_t sonarTrigPin = 0;
 	uint32_t sonarEchoPin = 0;
-	NewPingESP8266 *sonar;
+	NewPingESP8266* sonar;
 	float loAlarm = 0.10F;  // default to 10%
 	float hiAlarm = 1.10F;  // default to 110%
 	int pingCount = 0;
@@ -111,7 +111,7 @@ public:
 
 //tank tanks[NUMTANKS];
 
-tank *tanks;
+tank* tanks;
 
 
 // ==== End Site Specific Items ====
@@ -182,6 +182,25 @@ StaticJsonDocument<MAXJSONSIZE> tankmsg;
 // Functions
 //
 
+void dumpTanksStruct()
+{
+	Serial.println("\nTanks struct dump:");
+	for (int t = 0; t <  numtanks; t++)
+	{
+		msgn = snprintf(msgbuff, MSGBUFFLEN, "\ntanks[%i].tankType=%c\ntanks[%i].ignore=%i\ntanks[%i].sonarOffset=%i", t, tanks[t].tankType[0], t, tanks[t].ignore, t, tanks[t].sonarOffset);
+		Serial.print(msgbuff);
+		msgn = snprintf(msgbuff, MSGBUFFLEN, "\ntanks[%i].sonarTrigPin=%i\ntanks[%i].sonarEchoPin=%i",t, tanks[t].sonarTrigPin, t, tanks[t].sonarEchoPin);
+		Serial.print(msgbuff);
+		msgn = snprintf(msgbuff, MSGBUFFLEN, "\ntanks[%i].depth=%f\ntanks[%i].vCM=%f", t, tanks[t].depth, t, tanks[t].vCM);
+		Serial.print(msgbuff);
+		msgn = snprintf(msgbuff, MSGBUFFLEN, "\ntanks[%i].loAlarm=%f\ntanks[%i].hiAlarm=%f\ntanks[%i].pumpNode=%i", t, tanks[t].loAlarm, t, tanks[t].hiAlarm, t, tanks[t].pumpNode);
+		Serial.print(msgbuff);
+		msgn = snprintf(msgbuff, MSGBUFFLEN, "\ntanks[%i].pumpNumber=%i\n", t, tanks[t].pumpNumber);
+		Serial.print(msgbuff);
+		Serial.flush();
+	}
+}
+
 bool loadConfig()
 {
 	DeserializationError jsonError;
@@ -196,7 +215,7 @@ bool loadConfig()
 	}
 	else Serial.println("Mounted file system");
 
-    Serial.print("\nOpening config file: ");
+	Serial.print("\nOpening config file: ");
 	Serial.print(TANKSMONCFGFILE);
 	configFile = SPIFFS.open(TANKSMONCFGFILE, "r");
 	if (!configFile)
@@ -217,23 +236,25 @@ bool loadConfig()
 	{
 		Serial.println("Failed to parse config file");
 		switch (jsonError.code()) {
-    case DeserializationError::Ok:
-        Serial.print(F("Deserialization succeeded"));
-        break;
-    case DeserializationError::InvalidInput:
-        Serial.print(F("Invalid input!"));
-        break;
-    case DeserializationError::NoMemory:
-        Serial.print(F("Not enough memory"));
-        break;
-    default:
-        Serial.print(F("Deserialization failed"));
-        break;
-}
+		case DeserializationError::Ok:
+			Serial.print(F("Deserialization succeeded"));
+			break;
+		case DeserializationError::InvalidInput:
+			Serial.print(F("Invalid input!"));
+			break;
+		case DeserializationError::NoMemory:
+			Serial.print(F("Not enough memory"));
+			break;
+		default:
+			Serial.print(F("Deserialization failed"));
+			break;
+		}
 		return false;
 	}
 	Serial.println("\nPretty dump of config file: \n");
-	serializeJsonPretty(configDoc, Serial);
+	size_t uartsz = 128;
+	serializeJsonPretty(configDoc, msgbuff, MSGBUFFSIZE);
+	outputMsg(msgbuff);
 
 	sitename = configDoc["site"]["sitename"];
 	pssid = configDoc["site"]["pssid"];
@@ -244,16 +265,16 @@ bool loadConfig()
 	assid = configDoc["site"]["altssid"];
 	apwd = configDoc["site"]["altpwd"];
 	mqttTopicData = configDoc["site"]["mqtt_topic_data"];
-	mqttTopicCtrl = configDoc["site"]["mqtt_topic_ctrl"];	
+	mqttTopicCtrl = configDoc["site"]["mqtt_topic_ctrl"];
 	mqttUid = configDoc["site"]["mqtt_uid"];
 	mqttPwd = configDoc["site"]["mqtt_pwd"];
 	otaPwd = configDoc["site"]["otapwd"];
-	
+
 	numtanks = configDoc["site"]["numtanks"];
 	tanks = new tank[numtanks];
-	
+
 	startingTankNum = configDoc["site"]["startingTankNum"];
-	
+
 	//displayUpdateDelay = configDoc["site"]["displaydelay"];
 	imperial = configDoc["site"]["imperial"];
 	useAvg = configDoc["site"]["useavg"];
@@ -263,36 +284,29 @@ bool loadConfig()
 	otaPwd = configDoc["site"]["otapwd"];
 	blynkAuth = configDoc["site"]["blynkauthtoken"];
 
-	for (int t = 0; t <= numtanks - 1; t++)
+	for (int t = 0; t < numtanks; t++)
 	{
-	    tanks[t].tankType = configDoc["tankdefs"][t]["tankType"];
-        tanks[t].ignore = configDoc["tankdefs"][t]["ignore"];
+		tanks[t].tankType = configDoc["tankdefs"][t]["tankType"];
+		tanks[t].ignore = configDoc["tankdefs"][t]["ignore"];
 		tanks[t].depth = configDoc["tankdefs"][t]["depth"];
 		tanks[t].vCM = configDoc["tankdefs"][t]["vCM"];
-		
-		tanks[t].sonarOffset = configDoc["tankdefs"][t]["sonarOffset"];
+
+		tanks[t].sonarOffset = configDoc["tankdefs"][t]["sensorOffset"];
+
 		tanks[t].sonarTrigPin = configDoc["tankdefs"][t]["sonarTrigPin"];
 		tanks[t].sonarEchoPin = configDoc["tankdefs"][t]["sonarEchoPin"];
-		
+
 		loAlarmFactor = configDoc["tankdefs"][t]["loAlarmFactor"];
 		tanks[t].loAlarm = loAlarmFactor * tanks[t].depth;
 		hiAlarmFactor = configDoc["tankdefs"][t]["hiAlarmFactor"];
 		tanks[t].hiAlarm = hiAlarmFactor * tanks[t].depth;
 		tanks[t].pumpNode = configDoc["tankdefs"][t]["pumpnode"];
 		tanks[t].pumpNumber = configDoc["tankdefs"][t]["pumpnumber"];
-		
+
 	}
 
 	Serial.println("Config loaded");
-	for (int t = 0; t <= numtanks - 1; t++)
-	{
-		Serial.println(tanks[t].depth);
-		Serial.println(tanks[t].vCM);
-		Serial.println(tanks[t].sonarOffset);
-		Serial.println(tanks[t].loAlarm);
-		Serial.println(tanks[t].hiAlarm);
-	}
-
+	if (debug) dumpTanksStruct();
 	return true;
 }
 
