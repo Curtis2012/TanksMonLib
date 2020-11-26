@@ -184,12 +184,12 @@ StaticJsonDocument<MAXJSONSIZE> tankmsg;
 
 void dumpTanksStruct()
 {
-	Serial.println("\nTanks struct dump:");
+	outputMsg("\nTanks struct dump:");
 	for (int t = 0; t <  numtanks; t++)
 	{
-		msgn = snprintf(msgbuff, MSGBUFFLEN, "\ntanks[%i].tankType=%c\ntanks[%i].ignore=%i\ntanks[%i].sonarOffset=%i", t, tanks[t].tankType[0], t, tanks[t].ignore, t, tanks[t].sonarOffset);
+		msgn = snprintf(msgbuff, MSGBUFFLEN, "\ntanks[%i].tankType=%c\ntanks[%i].ignore=%i\ntanks[%i].timeOut=%i", t, tanks[t].tankType[0], t, tanks[t].ignore, t, tanks[t].timeOut);
 		Serial.print(msgbuff);
-		msgn = snprintf(msgbuff, MSGBUFFLEN, "\ntanks[%i].sonarTrigPin=%i\ntanks[%i].sonarEchoPin=%i",t, tanks[t].sonarTrigPin, t, tanks[t].sonarEchoPin);
+		msgn = snprintf(msgbuff, MSGBUFFLEN, "\ntanks[%i].sonarOffset=%i\ntanks[%i].sonarTrigPin=%i\ntanks[%i].sonarEchoPin=%i", t, tanks[t].sonarOffset, t, tanks[t].sonarTrigPin, tanks[t].sonarTrigPin, t, tanks[t].sonarEchoPin);
 		Serial.print(msgbuff);
 		msgn = snprintf(msgbuff, MSGBUFFLEN, "\ntanks[%i].depth=%f\ntanks[%i].vCM=%f", t, tanks[t].depth, t, tanks[t].vCM);
 		Serial.print(msgbuff);
@@ -288,6 +288,8 @@ bool loadConfig()
 	{
 		tanks[t].tankType = configDoc["tankdefs"][t]["tankType"];
 		tanks[t].ignore = configDoc["tankdefs"][t]["ignore"];
+		tanks[t].timeOut = configDoc["tankdefs"][t]["timeout"];
+		tanks[t].timeOut *= 1000;   // timeout is stored in config file in seconds, convert to milliseconds
 		tanks[t].depth = configDoc["tankdefs"][t]["depth"];
 		tanks[t].vCM = configDoc["tankdefs"][t]["vCM"];
 
