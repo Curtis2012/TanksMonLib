@@ -11,6 +11,10 @@
  * 2020-04-20 C. Collins. SPIFF/JSON config file support added
  * 2020-10-10 C. Collins. Added PumpMon integration/low water shutoff logic
  * 2020-10-23 C. Collins. Converted to dynamic memory allocation for tanks/sensors
+ * 2020-12-08 C. Collins. Added tank level persistence. This was needed to handle the situation where the long deep sleeping propane tank monitor and manager node get out of sync. 
+ *                        For example, propane monitor is in deep sleep when manager node is rebooted. In this case the manager node will restart with propane tank level of 0 and may not receive
+ *                        an update for a long time. This results in tank level of 0 being displayed until an update is received (which could be hours in the case of propane monitor). The persist file
+ *                        allows the manager node to load the last known good level reading. 
  *
  */
 
@@ -21,20 +25,51 @@
 #include "timer.h"          // by Michael Contreras
 
 #define TANKSMONCFGFILE  "/tanksmoncfg.json"
+#define TANKSMONPERSISTFILE  "/tanksmonpersist.json"
 #define JSONCONFIGDOCSIZE  4000
+#define JSONPERSISTDOCSIZE  50
 
 byte configBuff[JSONCONFIGDOCSIZE];
 File configFile;
 StaticJsonDocument<JSONCONFIGDOCSIZE> configDoc;
 
+byte configBuff[JSONPERSISTDOCSIZE];
+File persistFile;
+StaticJsonDocument<JSONPERSISTDOCSIZE> persistDoc;
+
+/*
+Persist Doc Structure
+
+{
+{
+"tanklevels":
+	[
+	{
+	"level":0
+	},
+	{
+	"level":0
+	},
+
+	{
+	"level":0
+	},
+
+	{
+	"level":0
+	}
+	...
+	]
+}
+
+*/
+
+
+
 
 //
 // Site Specific Items =========================================================================================================
 //
-
-//#ifndef NUMTANKS
-//#define NUMTANKS 8
-//#endif
 
 #define MAXPINGDISTANCE 400
 #define SENDDATADELAY 30000
@@ -201,6 +236,23 @@ void dumpTanksStruct()
 	}
 }
 
+bool openPersistFile()
+{
+	Serial.print("\nOpening persist file: ");
+	Serial.print(TANKSMONPERSISTFILE);
+	configFile = SPIFFS.open(TANKSMONPERSISTFILE, "r+");
+	if (!persistFile)
+	{
+		Serial.println("Failed to open persist file");
+		if (!SPIFFS.exists(TANKSMONCFGFILE)) Serial.println("File does not exist");
+		return(false);
+	}
+	else return(true);
+
+	return(false);
+}
+
+
 bool loadConfig()
 {
 	DeserializationError jsonError;
@@ -309,6 +361,7 @@ bool loadConfig()
 
 	Serial.println("Config loaded");
 	if (debug) dumpTanksStruct();
+
 	return true;
 }
 
