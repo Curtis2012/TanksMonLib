@@ -11,7 +11,7 @@
  * 2020-04-20 C. Collins. SPIFF/JSON config file support added
  * 2020-10-10 C. Collins. Added PumpMon integration/low water shutoff logic
  * 2020-10-23 C. Collins. Converted to dynamic memory allocation for tanks/sensors
- * 2020-12-08 C. Collins. Added tank level persistence. This was needed to handle the situation where the long deep sleeping propane tank monitor and manager node get out of sync. 
+ * 2020-12-08 C. Collins. (in work) Added tank level persistence. This was needed to handle the situation where the long deep sleeping propane tank monitor and manager node get out of sync. 
  *                        For example, propane monitor is in deep sleep when manager node is rebooted. In this case the manager node will restart with propane tank level of 0 and may not receive
  *                        an update for a long time. This results in tank level of 0 being displayed until an update is received (which could be hours in the case of propane monitor). The persist file
  *                        allows the manager node to load the last known good level reading. 
@@ -33,7 +33,7 @@ byte configBuff[JSONCONFIGDOCSIZE];
 File configFile;
 StaticJsonDocument<JSONCONFIGDOCSIZE> configDoc;
 
-byte configBuff[JSONPERSISTDOCSIZE];
+byte presistBuff[JSONPERSISTDOCSIZE];
 File persistFile;
 StaticJsonDocument<JSONPERSISTDOCSIZE> persistDoc;
 
